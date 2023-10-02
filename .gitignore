@@ -1,0 +1,6 @@
+# Игнорирование директорий автоматически создаваемых PyCharm
+venv/
+.idea/
+__pycache__/
+theory.py
+prov.py
