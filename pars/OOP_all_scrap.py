@@ -53,7 +53,6 @@ class BaseJobParser:
         """
         Метод для парсинга вакансий, должен быть дополнен в наследниках
         """
-        print("staaaaaaart")
         if len(self.df) > 0:
             try:
                 for descr in self.df.index:
