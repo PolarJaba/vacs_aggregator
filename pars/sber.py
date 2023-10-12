@@ -80,9 +80,10 @@ class SberJobParser:
                     self.df.loc[len(self.df)] = vac_info
                 input_str.clear()
 
-            except:
+
+            except Exception as e:
+                print(f"Произошла ошибка: {e}")
                 input_str.clear()
-                pass
 
         self.df = self.df.drop_duplicates(subset=['link'], keep='last')
         self.df['date'] = self.df['date'].apply(lambda x: dateparser.parse(x).strftime('%Y-%m-%d'))
