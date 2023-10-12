@@ -1,126 +1,18 @@
-from clickhouse_driver import Client
-import dateparser
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import csv, json
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators.bash_operator import BashOperator
-from airflow.utils.log.logging_mixin import LoggingMixin
-import logging
-from logging import handlers
-# from airflow.hooks.base_hook import BaseHook
-from airflow.models import Variable
+import config as c
+
 import time
-from datetime import datetime, timedelta
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+import datetime
+import dateparser
 from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
-from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
 import pandas as pd
-import os
-
-# Connections settings
-# Загружаем данные подключений из JSON файла
-with open('/opt/airflow/dags/config_connections.json', 'r') as config_file:
-    connections_config = json.load(config_file)
-
-# Получаем данные конфигурации подключения и создаем конфиг для клиента
-conn_config = connections_config['click_connect']
-config = {
-    'database': conn_config['database'],
-    'user': conn_config['user'],
-    'password': conn_config['password'],
-    'host': conn_config['host'],
-    'port': conn_config['port'],
-}
-
-client = Client(**config)
-
-# Variables settings
-# Загружаем переменные из JSON файла
-with open('/opt/airflow/dags/config_variables.json', 'r') as config_file:
-    my_variables = json.load(config_file)
-
-Variable.set("shares_variable", my_variables, serialize_json=True)
-
-dag_variables = Variable.get("shares_variable", deserialize_json=True)
-
-url_sber = dag_variables['base_sber']
-url_yand = dag_variables['base_yand']
-url_vk = dag_variables['base_vk']
-raw_tables = ['raw_vk', 'raw_sber']
-
-options = ChromeOptions()
-
-profs = dag_variables['professions']
-
-logging_level = os.environ.get('LOGGING_LEVEL', 'INFO').upper()
-logging.basicConfig(level=logging_level)
-log = logging.getLogger(__name__)
-log_handler = handlers.RotatingFileHandler('/opt/airflow/logs/airflow.log',
-                                           maxBytes=5000,
-                                           backupCount=5)
-log_handler.setLevel(logging.ERROR)
-log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-log_handler.setFormatter(log_formatter)
-log.addHandler(log_handler)
-
-# Параметры по умолчанию
-default_args = {
-    "owner": "admin_1T",
-    # 'start_date': days_ago(1),
-    'retry_delay': timedelta(minutes=5),
-}
-
-# Создаем DAG ручного запуска (инициализирующий режим).
-first_raw_dag = DAG(dag_id='first_raw_dag',
-                tags=['admin_1T'],
-                start_date=datetime(2023, 10, 2),
-                schedule_interval=None,
-                default_args=default_args
-                )
-
-url_sber = dag_variables.get('base_sber')
-url_yand = dag_variables.get('base_yand')
-url_vk = dag_variables.get('base_vk')
-df_sber = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date'])
-df_vk = pd.DataFrame(columns=['link', 'name', 'location', 'company'])
-cur_date = datetime.now().strftime('%Y-%m-%d')
-cur_year = datetime.now().year
-
-class DatabaseManager:
-    def __init__(self, client, database):
-        self.client = client
-        self.database = database
-        self.raw_tables = ['raw_vk', 'raw_sber']
-        self.log = LoggingMixin().log
-
-    def create_raw_tables(self):
-        for table_name in self.raw_tables:
-            drop_table_query = f"DROP TABLE IF EXISTS {self.database}.{table_name};"
-            self.client.execute(drop_table_query)
-            self.log.info(f'Удалена таблица {table_name}')
-
-            create_table_query = f"""
-            CREATE TABLE {self.database}.{table_name}(
-               link String,
-               name String,
-               location String,
-               company String,
-               vacancy_date Date,
-               date_of_download Date
-            ) ENGINE = MergeTree()
-            ORDER BY link
-            """
-            self.client.execute(create_table_query)
-            self.log.info(f'Таблица {table_name} создана в базе данных {self.database}.')
 
 
 class BaseJobParser:
-    def __init__(self, url, profs, log, df):
-        self.browser = webdriver.Remote(command_executor='http://selenium-router:4444/wd/hub', options=options)
+    def __init__(self, url, profs, log):
+        self.browser = webdriver.Chrome()
         self.url = url
         self.browser.get(self.url)
         self.browser.maximize_window()
@@ -128,7 +20,6 @@ class BaseJobParser:
         time.sleep(2)
         self.profs = profs
         self.log = log
-        self.df = df
 
     def scroll_down_page(self, page_height=0):
         """
@@ -152,25 +43,11 @@ class BaseJobParser:
         """
         raise NotImplementedError("Вы должны определить метод find_vacancies")
 
-    def find_vacancies_description(self):
-        """
-        Метод для парсинга вакансий, должен быть дополнен в наследниках
-        """
-        for descr in self.df.index:
-            link = self.df.loc[descr, 'link']
-            self.browser.get(link)
-            self.browser.delete_all_cookies()
-            time.sleep(3)
-
-    def save_df(self, table_name):
+    def save_df(self):
         """
         Метод для сохранения данных из pandas DataFrame
         """
-        self.df['vacancy_date'] = self.df['vacancy_date'].dt.date
-        data = [tuple(x) for x in self.df.to_records(index=False)]
-        insert_query = f"INSERT INTO {config['database']}.{table_name} VALUES"
-        client.execute(insert_query, data)
-        self.log.info("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
+        raise NotImplementedError("Вы должны определить метод save_df")
 
 
 class VKJobParser(BaseJobParser):
@@ -181,6 +58,7 @@ class VKJobParser(BaseJobParser):
         """
         Метод для нахождения вакансий с VK
         """
+        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company'])
         self.log.info('Старт парсинга вакансий')
         self.browser.implicitly_wait(3)
         # Поиск и запись вакансий на поисковой странице
@@ -219,18 +97,18 @@ class VKJobParser(BaseJobParser):
         self.df['vacancy_date'] = pd.to_datetime('1970-01-01').date()
         self.df['date_of_download'] = datetime.now().date()
 
-    def find_description(self):
-        for descr in self.df.index:
-            try:
-                link = self.df.loc[descr, 'link']
-                self.browser.get(link)
-                self.browser.delete_all_cookies()
-                time.sleep(3)
-
-                self.df.loc[descr, 'description'] = self.browser.find_element(By.CLASS_NAME, 'section').text
-            except Exception as e:
-                self.log.error(f"Произошла ошибка: {e}")
-                pass
+    def save_df(self):
+        """
+        Метод для Сохранения данных в базу данных vk
+        """
+        """
+        table_name = 'raw_vk'
+        data = [tuple(x) for x in self.df.to_records(index=False)]
+        insert_query = f"INSERT INTO {config['database']}.{table_name} VALUES"
+        client.execute(insert_query, data)
+        self.log.info("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
+        """
+        self.df.to_csv(f"loaded_data/all_3.txt", index=False, sep=';')
 
 
 class SberJobParser(BaseJobParser):
@@ -239,6 +117,7 @@ class SberJobParser(BaseJobParser):
     """
     def find_vacancies(self):
         """Метод для нахождения вакансий с Sberbank"""
+        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date'])
         self.log.info('Старт парсинга вакансий')
         self.browser.implicitly_wait(1)
         # Поиск и запись вакансий на поисковой странице
@@ -289,14 +168,18 @@ class SberJobParser(BaseJobParser):
         # Добавление текущей даты в отдельный столбец
         self.df['date_of_download'] = datetime.now().date()
 
-    def find_vacancies_description(self):
-        BaseJobParser.find_vacancies_description(self)
-        #texts_elems = self.browser.find_elements(By.CLASS_NAME, 'Box-sc-159i47a-0')
-        try:
-            self.df.loc[descr, 'description'] = str(self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]/div/div/div[3]/div[3]').text.replace(';', ''))
-        except Exception as e:
-            self.log.error(f"Произошла ошибка: {e}")
-            pass
+    def save_df(self):
+        """
+        Метод для сохранения данных в базу данных Sber
+        """
+        # Загружаем данные в базу данных
+        self.df['vacancy_date'] = self.df['vacancy_date'].dt.date
+        table_name = 'raw_sber'
+        data = [tuple(x) for x in self.df.to_records(index=False)]
+        insert_query = f"INSERT INTO {config['database']}.{table_name} VALUES"
+        client.execute(insert_query, data)
+        # Вывод результатов парсинга
+        self.log.info("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
 
 
 db_manager = DatabaseManager(client=client, database=config['database'])
@@ -308,9 +191,9 @@ def run_vk_parser(**context):
     log = context['ti'].log
     log.info('Запуск парсера ВК')
     try:
-        parser = VKJobParser(url_vk, profs, log, df_vk)
+        parser = VKJobParser(url_vk, profs, log)
         parser.find_vacancies()
-        parser.save_df('raw_vk')
+        parser.save_df()
         parser.stop()
         log.info('Парсер ВК успешно провел работу')
     except Exception as e:
@@ -323,44 +206,10 @@ def run_sber_parser(**context):
     log = context['ti'].log
     log.info('Запуск парсера Сбербанка')
     try:
-        parser = SberJobParser(url_sber, profs, log, df_sber)
+        parser = SberJobParser(url_sber, profs, log)
         parser.find_vacancies()
-        parser.save_df('raw_sber')
+        parser.save_df()
         parser.stop()
         log.info('Парсер Сбербанка успешно провел работу')
     except Exception as e:
         log.error(f'Ошибка во время работы парсера Сбербанка: {e}')
-
-
-hello_bash_task = BashOperator(
-    task_id='hello_task',
-    bash_command='echo "Желаю удачного парсинга! Да прибудет с нами безотказный интернет!"')
-
-# Определение задачи
-create_raw_tables = PythonOperator(
-    task_id='create_raw_tables',
-    python_callable=db_manager.create_raw_tables,
-    provide_context=True,
-    dag=first_raw_dag
-)
-
-parse_vkjobs = PythonOperator(
-    task_id='parse_vkjobs',
-    python_callable=run_vk_parser,
-    provide_context=True,
-    dag=first_raw_dag
-)
-
-parse_sber = PythonOperator(
-    task_id='parse_sber',
-    python_callable=run_sber_parser,
-    provide_context=True,
-    dag=first_raw_dag
-)
-
-
-end_task = DummyOperator(
-    task_id="end_task"
-)
-
-hello_bash_task >> create_raw_tables >> parse_vkjobs >> parse_sber >> end_task
