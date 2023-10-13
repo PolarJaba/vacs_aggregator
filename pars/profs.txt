@@ -1,1 +1,3 @@
 Data engineer
+Data analyst
+Data scientist

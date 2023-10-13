@@ -1,0 +1,56 @@
+link;name;location;company;vacancy_date;date_of_download
+https://rabota.sber.ru/search/4202767;Team Lead Data Scientist;г Москва;ПАО Сбербанк;2023-09-13 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4206884;Data Analyst;г Москва;ПАО Сбербанк;2023-10-11 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4201511;Data Engineer (Пульс);г Москва;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4214816;Data Scientist (NLP);г Санкт-Петербург;ПАО Сбербанк;2023-10-03 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4218261;FullStack Developer;г Москва;ПАО Сбербанк;2023-10-10 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4214072;Machine Learning Engineer (Рекламная платформа);г Москва;ПАО Сбербанк;2023-09-27 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4213112;Middle Data Scientist (Развитие клиентского опыта В2С);г Москва;ПАО Сбербанк;2023-09-25 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4214279;Senior Data Scientst;г Москва;ПАО Сбербанк;2023-09-27 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4216489;Эксперт по цифровым технологиям аудита;г Санкт-Петербург;ПАО Сбербанк;2023-10-05 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4213979;Лидер проекта (Премиальные решения);г Москва;ПАО Сбербанк;2023-10-04 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4211281;Исследователь данных;г Екатеринбург, Свердловская область;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4214297;Data Engineer;г Москва;ПАО Сбербанк;2023-10-02 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4206153;Senior \ Lead MLops (ИСУ);г Москва;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4211634;Data Engineer (Рекомендательная система);г Москва;ПАО Сбербанк;2023-09-20 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4111390;Senior Data Scientist;г Москва;ПАО Сбербанк;2023-01-16 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4212577;Junior QA Engineer (java) (SberStart);г Санкт-Петербург;АО Сбербанк-Технологии;2023-09-22 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4215995;Главный эксперт по цифровым технологиям аудита;г Москва;ПАО Сбербанк;2023-10-05 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4107077;Middle ML Engineer;г Москва;ПАО Сбербанк;2023-01-16 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4215927;Системный аналитик DWH;г Москва;ПАО Сбербанк;2023-10-03 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4212223;Python разработчик;г Москва;ПАО Сбербанк;22 сентября 2023;
+https://rabota.sber.ru/search/4207650;ML разработчик (команда СберСпасибо);г Москва;ПАО Сбербанк;2023-09-15 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4218281;Backend-разработчик (JS, SQL);г Москва;ПАО Сбербанк;2023-10-10 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4203732;Senior Data Analyst Private Banking;г Москва;ПАО Сбербанк;2023-10-01 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4213647;QA engineer (Hadoop);г Москва;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4209467;Эскперт по клиентскому опыту;г Москва;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4211524;Project Manager Sber AI Lab;г Москва;ПАО Сбербанк;2023-09-20 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4216067;Ведущий инженер по сопровождению;г Москва;ПАО Сбербанк;2023-10-04 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4193100;Data engineer (Рекламная платформа/Управление данными);г Москва;ПАО Сбербанк;2023-10-11 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4193101;Data engineer (Рекламная платформа/Управление данными);г Москва;ПАО Сбербанк;2023-10-11 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4211538;Руководитель проектов (внедрение AI в сегменте В2С);г Москва;ПАО Сбербанк;2023-09-26 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4209484;Java разработчик (ЦАРС);г Самара, Самарская область;ПАО Сбербанк;2023-10-05 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4218939;QA Engineer;г Москва;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4218906;Customer Journey Expert СберПрайм;г Москва;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4213243;Middle QA Engineer;г Сочи, Краснодарский край;ПАО Сбербанк;2023-09-28 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4214433;Senior Java разработчик;г Москва;ПАО Сбербанк;2023-09-28 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4217904;SQL разработчик;г Москва;ПАО Сбербанк;2023-10-09 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4204942;Senior Java Developer;г Москва;ПАО Сбербанк;2023-10-09 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4206603;Team Lead/Senior Java разработчик (кредитование);г Москва;ПАО Сбербанк;2023-09-13 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4217986;Системный аналитик;г Рязань, Рязанская область;ПАО Сбербанк;2023-10-10 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4211366;QA Load Test (SberTeamID);г Москва;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4213222;Senior DWH/BI Engineer (Postgresql);г Москва;ПАО Сбербанк;2023-09-26 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4210307;Разработчик_ML DevOps;г Москва;ПАО Сбербанк;2023-09-27 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4210829;Руководитель направления «Синергия B2B2C»;г Санкт-Петербург;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4212571;Senior Java developer;г Москва;ПАО Сбербанк;2023-09-25 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4200759;Системный аналитик;г Санкт-Петербург;ПАО Сбербанк;2023-09-14 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4208950;Разработчик ETL;г Москва;ПАО Сбербанк;2023-09-26 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4208567;Data Analyst (команда развития Платформы данных Профиля клиента );г Москва;ПАО Сбербанк;2023-09-15 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4198593;Senior/TeamLead Java developer;г Нижний Новгород, Нижегородская область;ПАО Сбербанк;2023-10-09 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4212717;Главный специалист аналитического управления (Data Analyst);г Санкт-Петербург;ПАО Сбербанк;2023-09-25 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4199311;Senior Python developer / Team Lead;г Санкт-Петербург;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4218479;Middle Data Analyst;г Москва;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4196973;TeamLead/ Senior Python Developer;г Самара, Самарская область;ПАО Сбербанк;2023-10-12 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4210706;Product owner DMP (Рекламная платформа);г Москва;ПАО Сбербанк;2023-09-19 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4215762;Системный аналитик;г Москва;ПАО Сбербанк;2023-10-04 00:00:00;2023-10-13
+https://rabota.sber.ru/search/4212223;Python разработчик;г Москва;ПАО Сбербанк;2023-09-22 00:00:00;2023-10-13
