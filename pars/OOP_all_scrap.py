@@ -12,11 +12,14 @@ import pandas as pd
 profs = pd.read_csv('profs.txt', sep=',', header=None, names=['fullName'])
 url_sber = c.sber_base_link
 url_vk = c.vk_base_link
-df_sber = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date'])
-df_vk = pd.DataFrame(columns=['link', 'name', 'location', 'company'])
-raw_tables = ['raw_vk', 'raw_sber']
+url_tin = c.tin_base_link
+df_sber = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date', 'date_of_download'])
+df_vk = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date', 'date_of_download'])
+df_tin = pd.DataFrame(columns=['link', 'name', 'location', 'level', 'company', 'vacancy_date', 'date_of_download'])
+raw_tables = ['raw_vk', 'raw_sber', 'raw_tinkoff']
 
 start_time = time.time()
+
 
 class BaseJobParser:
     def __init__(self, url, profs, df):
@@ -63,13 +66,20 @@ class BaseJobParser:
                     self.browser.delete_all_cookies()
                     time.sleep(3)
                     if isinstance(self, SberJobParser):
-                        self.df.loc[descr, 'description'] = self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]/div/div/div[3]/div[3]').text
+                        desc = self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]/div/div/div[3]/div[3]').text
+                        desc = desc.replace(';', '')
+                        self.df.loc[:, (descr, 'description')] = str(desc)
                     if isinstance(self, VKJobParser):
-                        self.df.loc[descr, 'description'] = self.browser.find_element(By.CLASS_NAME, 'section').text
+                        desc = self.browser.find_element(By.CLASS_NAME, 'section').text
+                        desc = desc.replace(';', '')
+                        self.df.loc[:, (descr, 'description')] = str(desc)
+                    if isinstance(self, TinkoffJobParser):
+                        desc = self.browser.find_element(By.CLASS_NAME, 'dyzaXu').text
+                        desc = desc.replace(';', '')
+                        self.df.loc[:, (descr, 'description')] = str(desc)
                 except Exception as e:
                     print(f"Произошла ошибка: {e}, ссылка {self.df.loc[descr, 'link']}")
                     pass
-            self.df['description'] = self.df['description'].replace(';', '')
         else:
             print("Нет вакансий для парсинга")
 
@@ -137,6 +147,7 @@ class SberJobParser(BaseJobParser):
         """Метод для нахождения вакансий с Sberbank"""
         print('Старт парсинга вакансий Sberbank')
         self.browser.implicitly_wait(1)
+
         # Поиск и запись вакансий на поисковой странице
         for prof in self.profs['fullName']:
             input_str = self.browser.find_element(By.XPATH,
@@ -181,10 +192,37 @@ class SberJobParser(BaseJobParser):
         self.df = self.df.drop_duplicates()
 
         # конвертация строки в объект datetime используя dateparser и приведение его к DateTime pandas
-        self.df['vacancy_date'] = self.df['vacancy_date'].apply(lambda x: dateparser.parse(x, languages=['ru']))
+        self.df['vacancy_date'] = self.df['vacancy_date'].apply(lambda x: dateparser.parse(x).strftime('%Y-%m-%d'))
 
         # Добавление текущей даты в отдельный столбец
         self.df['date_of_download'] = datetime.datetime.now().date()
+
+
+class TinkoffJobParser(BaseJobParser):
+
+    def open_all_pages(self):
+        elements = self.browser.find_elements(By.CLASS_NAME, 'fuBQPo')
+        for element in elements:
+            element.click()
+
+    def all_vacs_parser(self):
+        try:
+            vacs = self.browser.find_elements(By.CLASS_NAME, 'eM3bvP')
+            for vac in vacs:
+                vac_info = {}
+                vac_info['link'] = vac.find_element(By.TAG_NAME, 'a').get_attribute('href')
+                data = vac.find_elements(By.CLASS_NAME, 'gM3bvP')
+                vac_info['name'] = data[0].text
+                vac_info['level'] = data[1].text
+                vac_info['location'] = data[2].text
+                self.df.loc[len(self.df)] = vac_info
+
+            self.df['company'] = 'Тинькофф'
+            self.df['vacancy_date'] = pd.to_datetime('1970-01-01').date()
+            self.df['date_of_download'] = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        except Exception as e:
+            print(f"Произошла ошибка: {e}")
 
 
 parser = VKJobParser(url_vk, profs, df_vk)
@@ -197,6 +235,13 @@ parser = SberJobParser(url_sber, profs, df_sber)
 parser.find_vacancies()
 parser.find_vacancies_description()
 parser.save_df(raw_tables[1])
+parser.stop()
+
+parser = TinkoffJobParser(url_tin, profs, df_tin)
+parser.open_all_pages()
+parser.all_vacs_parser()
+parser.find_vacancies_description()
+parser.save_df(raw_tables[2])
 parser.stop()
 
 end_time = time.time()
