@@ -91,7 +91,7 @@ class SberJobParser:
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for prof in self.profs['profs_names']:
                 futures.append(executor.submit(self.find_vacancies(prof)))
-            for future in concurrent.futures.as_completed(futures):
+            # for future in concurrent.futures.as_completed(futures):
                 
 
     def change_df(self, find_vacancies):
