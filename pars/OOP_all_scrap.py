@@ -22,7 +22,7 @@ start_time = time.time()
 
 
 class BaseJobParser:
-    def __init__(self, url, profs, df):
+    def __init__(self, url, profs, df = pd.DataFrame()):
         self.browser = webdriver.Chrome()
         self.url = url
         self.browser.get(self.url)
@@ -64,7 +64,7 @@ class BaseJobParser:
                     link = self.df.loc[descr, 'link']
                     self.browser.get(link)
                     self.browser.delete_all_cookies()
-                    time.sleep(3)
+                    self.browser.implicitly_wait(5)
                     if isinstance(self, SberJobParser):
                         desc = self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]/div/div/div[3]/div[3]').text
                         desc = desc.replace(';', '')
@@ -87,7 +87,7 @@ class BaseJobParser:
         """
         Метод для сохранения данных из pandas DataFrame
         """
-        self.df.to_csv(f"{table}.txt", index=False, sep=';')
+        self.df.to_csv(f"loaded_data/{table}.txt", index=False, sep=';')
         print("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
 
 
@@ -100,6 +100,8 @@ class VKJobParser(BaseJobParser):
         Метод для нахождения вакансий с VK
         """
         print('Старт парсинга вакансий VK')
+
+        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date', 'date_of_download'])
         self.browser.implicitly_wait(3)
         # Поиск и запись вакансий на поисковой странице
         for prof in self.profs['fullName']:
@@ -146,6 +148,8 @@ class SberJobParser(BaseJobParser):
     def find_vacancies(self):
         """Метод для нахождения вакансий с Sberbank"""
         print('Старт парсинга вакансий Sberbank')
+
+        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date', 'date_of_download'])
         self.browser.implicitly_wait(1)
 
         # Поиск и запись вакансий на поисковой странице
@@ -206,6 +210,8 @@ class TinkoffJobParser(BaseJobParser):
             element.click()
 
     def all_vacs_parser(self):
+        self.df = pd.DataFrame(
+            columns=['link', 'name', 'location', 'level', 'company', 'vacancy_date', 'date_of_download'])
         try:
             vacs = self.browser.find_elements(By.CLASS_NAME, 'eM3bvP')
             for vac in vacs:
@@ -225,26 +231,28 @@ class TinkoffJobParser(BaseJobParser):
             print(f"Произошла ошибка: {e}")
 
 
-parser = VKJobParser(url_vk, profs, df_vk)
+parser = VKJobParser(url_vk, profs)
 parser.find_vacancies()
 parser.find_vacancies_description()
 parser.save_df(raw_tables[0])
 parser.stop()
 
-parser = SberJobParser(url_sber, profs, df_sber)
+parser = SberJobParser(url_sber, profs)
 parser.find_vacancies()
-parser.find_vacancies_description()
+# parser.find_vacancies_description()
 parser.save_df(raw_tables[1])
 parser.stop()
 
-parser = TinkoffJobParser(url_tin, profs, df_tin)
+parser = TinkoffJobParser(url_tin, profs)
 parser.open_all_pages()
 parser.all_vacs_parser()
-parser.find_vacancies_description()
+# parser.find_vacancies_description()
 parser.save_df(raw_tables[2])
 parser.stop()
 
 end_time = time.time()
 
 print('Scraping time: ', end_time - start_time)
+
+
 

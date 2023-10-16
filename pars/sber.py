@@ -107,13 +107,13 @@ class SberJobParser:
 
     def save_df(self):
 
-        self.df.to_csv(f"all_3.txt", index=False, sep='|')
+        self.df.to_csv(f"loaded_data/all_3.txt", index=False, sep=';')
         # Вывод результатов парсинга
         print("Общее количество вакансий: " + str(len(self.df)) + "\n")
 
 
 parser = SberJobParser(url_sber, profs)
 parser.find_vacancies()
-parser.find_descriptions()
+# parser.find_descriptions()
 parser.save_df()
 parser.stop()
