@@ -8,65 +8,141 @@ from selenium.webdriver.common.keys import Keys
 
 import pandas as pd
 
-profs = pd.read_csv('profs.txt', sep=',', header=None, names=['profs_names', 'short_name'])
-df = pd.DataFrame(columns=['link', 'department'])
-                           # 'location', 'format',
-                           # 'name', 'describe'])
+profs = pd.read_csv('profs.txt', sep=',', header=None, names=['fullName'])
+
 
 cur_date = datetime.datetime.now().strftime('%Y-%m-%d')
 cur_year = datetime.datetime.now().year
 
-with webdriver.Chrome() as browser:
-    browser.get(c.yand_base_link)
-    browser.maximize_window()
-    browser.delete_all_cookies()
-    time.sleep(2)
 
-    for i in range(0, len(profs)):
-        input_str = browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]/div[1]/div[2]/section/div/div/div/div[3]/div/div[2]/div/div/span/input')
-        input_str.send_keys(f"{profs['profs_names'][i]}")
-        time.sleep(5)
-        click_button = browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]/div[1]/div[2]/section/div/div/div/div[3]/div/div[2]/div/button')
-        click_button.click()
-        time.sleep(5)
+class BaseJobParser:
+    def __init__(self, url, profs, df=pd.DataFrame()):
+        self.browser = webdriver.Chrome()
+        self.url = url
+        self.browser.get(self.url)
+        self.browser.maximize_window()
+        self.browser.delete_all_cookies()
+        time.sleep(2)
+        self.profs = profs
+        self.df = df
 
-        # Прокрутка вниз до конца страницы
-        page_height = browser.execute_script('return document.body.scrollHeight')
+    def scroll_down_page(self, page_height=0):
+        """
+        Метод прокрутки страницы
+        """
+        self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(2)
+        new_page_height = self.browser.execute_script('return document.body.scrollHeight')
+        if new_page_height > page_height:
+            self.scroll_down_page(new_page_height)
 
-        while True:
-            browser.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
+    def stop(self):
+        """
+        Метод для выхода из Selenium Webdriver
+        """
+        self.browser.quit()
+
+    def find_vacancies(self):
+        """
+        Метод для парсинга вакансий, должен быть переопределен в наследниках
+        """
+        raise NotImplementedError("Вы должны определить метод find_vacancies")
+
+    def find_vacancies_description(self):
+        """
+        Метод для парсинга вакансий, должен быть дополнен в наследниках
+        """
+        if len(self.df) > 0:
+            for descr in self.df.index:
+                try:
+                    link = self.df.loc[descr, 'link']
+                    self.browser.get(link)
+                    self.browser.delete_all_cookies()
+                    self.browser.implicitly_wait(5)
+                    if isinstance(self, YandJobParser):
+                        desc = self.browser.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-mvp__description').text
+                        desc = desc.replace(';', '')
+                        self.df.loc[:, (desc, 'description')] = str(desc)
+                        tags = self.browser.find_element(By.CLASS_NAME, 'lc-jobs-tags-block').text
+                        self.df.loc[:, (desc, 'tags')] = str(tags)
+                        header = self.browser.find_element(By.CLASS_NAME, 'lc-jobs-content-header')
+                        name = header.find_element(By.CLASS_NAME, 'lc-styled-text__text').text
+                        self.df.loc[:, (desc, 'name')] = str(name)
+                except Exception as e:
+                    print(f"Произошла ошибка: {e}, ссылка {self.df.loc[descr, 'link']}")
+                    pass
+        else:
+            print("Нет вакансий для парсинга")
+
+        print(self.df['link'].head())
+        print(self.df['name'].head())
+        print(self.df['description'].head())
+        print(self.df['date_of_download'].head())
+        print(self.df['company'].head())
+
+    def save_df(self, table):
+        """
+        Метод для сохранения данных из pandas DataFrame
+        """
+        self.df.to_csv(f"loaded_data/{table}.txt", index=False, sep=';')
+        print("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
+
+
+class YandJobParser(BaseJobParser):
+    def find_vacancies(self):
+        print('Старт парсинга вакансий Yandex')
+
+        self.df = pd.DataFrame(columns=['link', 'name', 'company', 'tags', 'description', 'date_of_download'])
+        self.browser.implicitly_wait(3)
+        # Поиск и запись вакансий на поисковой странице
+        for prof in self.profs['fullName']:
+            input_str = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
+                                                            '/div[1]/div[2]/section/div/div/div/div[3]/div'
+                                                            '/div[2]/div/div/span/input')
+
+            input_str.send_keys(f"{prof}")
+            click_button = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
+                                                               '/div[1]/div[2]/section/div/div/div/div[3]/div'
+                                                               '/div[2]/div/button')
+            click_button.click()
             time.sleep(3)
 
-            new_page_height = browser.execute_script('return document.body.scrollHeight')
+            # Прокрутка вниз до конца страницы
+            self.scroll_down_page()
 
-            if new_page_height == page_height:
-                break
-            else:
-                page_height = new_page_height
+            try:
+                # Подсчет количества предложений
+                vacs_bar = self.browser.find_element(By.CLASS_NAME, 'lc-jobs-vacancies-list')
+                vacs = vacs_bar.find_elements(By.CLASS_NAME, 'lc-jobs-vacancy-card')
 
-        # Подсчет количества предложений
-        vacs_bar = browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]/div[1]/div[2]/section/div/div/div/div[3]/div/div[5]')
-        vacs = vacs_bar.find_elements(By.TAG_NAME, 'span')
+                for vac in vacs:
+                    vac_info = {}
+                    find_link = vac.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-card__link')
+                    vac_info['link'] = find_link.get_attribute('href')
+                    #print(vac.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-card__link').get_attribute('href'))
+                    vac_info['company'] = vac.find_elements(By.CLASS_NAME, 'lc-styled-text')[0].text
+                    #print(vac.find_elements(By.CLASS_NAME, 'lc-styled-text')[0].text)
+                    self.df.loc[len(self.df)] = vac_info
 
-        vacs = [span for span in vacs if 'lc-jobs-vacancy-card' in str(span.get_attribute('class'))]
-        print(f"Парсим вакансии по запросу: {profs['profs_names'][i]}")
-        print(f"Количество: " + str(len(vacs)) + "\n")
-        # 'id', 'link', 'department',
-        # 'location', 'format',
-        # 'name', 'describe'
-        for vac in vacs:
-            vac_info = {}
-            # vac_info['id'] = vac.find_element(By.TAG_NAME, 'span').get_attribute('data-vacancy-id')
-            vac_info['link'] = vac.find_element(By.TAG_NAME, 'a').get_attribute('href')
-            data = vac.find_elements(By.CLASS_NAME, 'lc-styled-text__text')
-            vac_info['department'] = data[0].text
-            # vac_info['location'] = data[1].text
-            # vac_info['format'] = data[2].text
-            # vac_info['name'] = data[3].text
-            # vac_info['describe'] = data[4].text
-            df.loc[len(df)] = vac_info
+            except Exception as e:
+                print(f"Ошибка {e}")
 
-        input_clear = browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]/div[1]/div[2]/section/div/div/div/div[3]/div/div[2]/div/div/span/span[1]')
-        input_clear.click()
+            clear_button = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]/div[1]'
+                                                               '/div[2]/section/div/div/div/div[3]/div/div[2]/div'
+                                                               '/div/span/span[1]')
+            clear_button.click()
 
-df.to_csv(f"loaded_data/test.txt", index=False, sep=';')
+        self.df = self.df.drop_duplicates()
+        self.df['date_of_download'] = datetime.datetime.now().date()
+
+
+
+
+parser = YandJobParser(c.yand_base_link, profs)
+parser.find_vacancies()
+parser.find_vacancies_description()
+parser.save_df('yand')
+
+
+
+

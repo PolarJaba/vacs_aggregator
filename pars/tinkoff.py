@@ -42,18 +42,21 @@ class TinkoffJobParser:
         self.df['date_of_download'] = datetime.datetime.now().strftime('%Y-%m-%d')
 
     def find_vacancies_description(self):
+        self.df['description'] = 'None'
         for descr in self.df.index:
             link = self.df.loc[descr, 'link']
             self.browser.get(link)
             self.browser.delete_all_cookies()
             time.sleep(3)
-            self.df.loc[descr, 'description'] = self.browser.find_element(By.CLASS_NAME, 'dyzaXu').text.replace(';', '')
+            desc = str(self.browser.find_element(By.CLASS_NAME, 'dyzaXu').text)
+            desc = desc.replace(';', '')
+            self.df.loc[descr, 'description'] = desc
 
     def save_df(self):
         """
         Метод для сохранения данных из pandas DataFrame
         """
-        self.df.to_csv(f"tin.txt", index=False, sep=';')
+        self.df.to_csv(f"loaded_data/tin.txt", index=False, sep=';')
         print("Общее количество вакансий: " + str(len(self.df)) + "\n")
 
 
