@@ -10,63 +10,109 @@ from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
 
 
-profs = pd.read_csv('profs.txt', sep=',', header=None, names=['profs_names'])
 url_sber = c.sber_base_link
+profs = pd.read_csv('profs.txt', sep=',', header=None, names=['fullName'])
+raw_tables = ['raw_vk', 'raw_sber', 'raw_tinkoff', 'raw_yandex']
 
 
-class SberJobParser:
-
-    def __init__(self, url_sber, profs):
-
-        # Передаем название вакансии
+class BaseJobParser:
+    def __init__(self, url, profs, df=pd.DataFrame()):
         self.browser = webdriver.Chrome()
-        self.url_sber = url_sber
-        self.browser.get(self.url_sber)
+        self.url = url
+        self.browser.get(self.url)
         self.browser.maximize_window()
         self.browser.delete_all_cookies()
         time.sleep(2)
         self.profs = profs
-        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'date', 'description'])
+        self.df = df
 
     def scroll_down_page(self, page_height=0):
-
-        # Скролл до конца страницы
+        """
+        Метод прокрутки страницы
+        """
         self.browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         time.sleep(2)
-
         new_page_height = self.browser.execute_script('return document.body.scrollHeight')
         if new_page_height > page_height:
             self.scroll_down_page(new_page_height)
 
     def stop(self):
-
-        # Выход из Webdriver selenium
+        """
+        Метод для выхода из Selenium Webdriver
+        """
         self.browser.quit()
 
     def find_vacancies(self):
+        """
+        Метод для парсинга вакансий, должен быть переопределен в наследниках
+        """
+        raise NotImplementedError("Вы должны определить метод find_vacancies")
+
+    def find_vacancies_description(self):
+        """
+        Метод для парсинга вакансий, должен быть дополнен в наследниках
+        """
+        if len(self.df) > 0:
+            for descr in self.df.index:
+                try:
+                    link = self.df.loc[descr, 'link']
+                    self.browser.get(link)
+                    self.browser.delete_all_cookies()
+                    self.browser.implicitly_wait(5)
+                    # Этот парсер разрабатывался для общего для 3х источников DAG'a
+                    if isinstance(self, SberJobParser):
+                        desc = self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]'
+                                                                   '/div/div/div[3]/div[3]').text
+                        desc = desc.replace(';', '')
+                        self.df.loc[:, (descr, 'description')] = str(desc)
+                except Exception as e:
+                    print(f"Произошла ошибка: {e}, ссылка {self.df.loc[descr, 'link']}")
+                    pass
+        else:
+            print("Нет вакансий для парсинга")
+
+    def save_df(self, table):
+        """
+        Метод для сохранения данных из pandas DataFrame
+        """
+        self.df.to_csv(f"loaded_data/{table}.txt", index=False, sep=';')
+        print("Общее количество вакансий после удаления дубликатов: " + str(len(self.df)) + "\n")
+
+
+class SberJobParser(BaseJobParser):
+    """
+    Парсер для вакансий с сайта Sberbank, наследованный от BaseJobParser
+    """
+    def find_vacancies(self):
+        """Метод для нахождения вакансий с Sberbank"""
+        print('Старт парсинга вакансий Sberbank')
+
+        self.df = pd.DataFrame(columns=['link', 'name', 'location', 'company', 'vacancy_date', 'date_of_download'])
+        self.browser.implicitly_wait(1)
 
         # Поиск и запись вакансий на поисковой странице
-        for prof in self.profs['profs_names']:
-            input_str = self.browser.find_element(By.XPATH,
-                                                  '/html/body/div/div/div[2]/div[3]/div/div/div[2]/div/div/div/div/input')
+        for prof in self.profs['fullName']:
+            input_str = self.browser.find_element(By.XPATH, '/html/body/div/div/div[2]/div[3]/div'
+                                                            '/div/div[2]/div/div/div/div/input')
 
             input_str.send_keys(f"{prof}")
-            click_button = self.browser.find_element(By.XPATH,
-                                                     '/html/body/div/div/div[2]/div[3]/div/div/div[2]/div/div/div/div/button')
+            click_button = self.browser.find_element(By.XPATH, '/html/body/div/div/div[2]/div[3]/div/div'
+                                                               '/div[2]/div/div/div/div/button')
             click_button.click()
-            time.sleep(5)
+            time.sleep(3)
 
             # Прокрутка вниз до конца страницы
             self.scroll_down_page()
 
             try:
                 # Подсчет количества предложений
-                vacs_bar = self.browser.find_element(By.XPATH,
-                                                     '/html/body/div/div/div[2]/div[3]/div/div/div[3]/div/div[3]/div[2]')
+                vacs_bar = self.browser.find_element(By.XPATH, '/html/body/div/div/div[2]/div[3]/div/div'
+                                                               '/div[3]/div/div[3]/div[2]')
                 vacs = vacs_bar.find_elements(By.TAG_NAME, 'div')
 
                 vacs = [div for div in vacs if 'styled__Card-sc-192d1yv-1' in str(div.get_attribute('class'))]
-                print(f"Количество вакансий по запросу: '{prof}': " + str(len(vacs)) + "\n")
+                print(f"Парсим вакансии по запросу: {prof}")
+                print(f"Количество: " + str(len(vacs)) + "\n")
 
                 for vac in vacs:
                     vac_info = {}
@@ -75,45 +121,27 @@ class SberJobParser:
                     vac_info['name'] = data[0].text
                     vac_info['location'] = data[2].text
                     vac_info['company'] = data[3].text
-                    vac_info['date'] = data[4].text
-                    vac_info['date_of_download'] = datetime.datetime.now().strftime('%Y-%m-%d')
+                    vac_info['vacancy_date'] = data[4].text
                     self.df.loc[len(self.df)] = vac_info
-                input_str.clear()
 
+                input_str.clear()
 
             except Exception as e:
                 print(f"Произошла ошибка: {e}")
                 input_str.clear()
 
-        self.df = self.df.drop_duplicates(subset=['link'], keep='last')
-        self.df['date'] = self.df['date'].apply(lambda x: dateparser.parse(x).strftime('%Y-%m-%d'))
-        print('Всего:', len(self.df.drop_duplicates(subset=['link'], keep='last')))
-        self.df.to_csv(f"all_shorts.txt", index=False, sep=';')
+        # Удаление дубликатов в DataFrame
+        self.df = self.df.drop_duplicates()
 
-    def find_descriptions(self):
+        # конвертация строки в объект datetime используя dateparser и приведение его к DateTime pandas
+        self.df['vacancy_date'] = self.df['vacancy_date'].apply(lambda x: dateparser.parse(x).strftime('%Y-%m-%d'))
 
-        # Парсинг описаний
-        for descr in self.df.index:
-            link = self.df.loc[descr, 'link']
-            self.browser.get(link)
-            self.browser.delete_all_cookies()
-            time.sleep(3)
-            #texts_elems = self.browser.find_elements(By.CLASS_NAME, 'Box-sc-159i47a-0')
-            try:
-                self.df.loc[descr, 'description'] = str(self.browser.find_element(By.XPATH, '/html/body/div[1]/div/div[2]/div[3]/div/div/div[3]/div[3]').text.replace(';', ''))
-            except:
-                self.df.loc[descr, 'description'] = None
-
-
-    def save_df(self):
-
-        self.df.to_csv(f"loaded_data/all_3.txt", index=False, sep=';')
-        # Вывод результатов парсинга
-        print("Общее количество вакансий: " + str(len(self.df)) + "\n")
+        # Добавление текущей даты в отдельный столбец
+        self.df['date_of_download'] = datetime.datetime.now().date()
 
 
 parser = SberJobParser(url_sber, profs)
 parser.find_vacancies()
-# parser.find_descriptions()
-parser.save_df()
+parser.find_vacancies_description()
+parser.save_df(raw_tables[1])
 parser.stop()

@@ -9,10 +9,7 @@ from selenium.webdriver.common.keys import Keys
 import pandas as pd
 
 profs = pd.read_csv('profs.txt', sep=',', header=None, names=['fullName'])
-
-
-cur_date = datetime.datetime.now().strftime('%Y-%m-%d')
-cur_year = datetime.datetime.now().year
+raw_tables = ['raw_vk', 'raw_sber', 'raw_tinkoff', 'raw_yandex']
 
 
 class BaseJobParser:
@@ -59,6 +56,7 @@ class BaseJobParser:
                     self.browser.get(link)
                     self.browser.delete_all_cookies()
                     self.browser.implicitly_wait(5)
+                    # Этот парсер разрабатывался для общего для 3х источников DAG'a
                     if isinstance(self, YandJobParser):
                         desc = self.browser.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-mvp__description').text
                         desc = desc.replace(';', '')
@@ -73,12 +71,6 @@ class BaseJobParser:
                     pass
         else:
             print("Нет вакансий для парсинга")
-
-        print(self.df['link'].head())
-        print(self.df['name'].head())
-        print(self.df['description'].head())
-        print(self.df['date_of_download'].head())
-        print(self.df['company'].head())
 
     def save_df(self, table):
         """
@@ -119,9 +111,7 @@ class YandJobParser(BaseJobParser):
                     vac_info = {}
                     find_link = vac.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-card__link')
                     vac_info['link'] = find_link.get_attribute('href')
-                    #print(vac.find_element(By.CLASS_NAME, 'lc-jobs-vacancy-card__link').get_attribute('href'))
                     vac_info['company'] = vac.find_elements(By.CLASS_NAME, 'lc-styled-text')[0].text
-                    #print(vac.find_elements(By.CLASS_NAME, 'lc-styled-text')[0].text)
                     self.df.loc[len(self.df)] = vac_info
 
             except Exception as e:
@@ -136,12 +126,11 @@ class YandJobParser(BaseJobParser):
         self.df['date_of_download'] = datetime.datetime.now().date()
 
 
-
-
 parser = YandJobParser(c.yand_base_link, profs)
 parser.find_vacancies()
 parser.find_vacancies_description()
-parser.save_df('yand')
+parser.save_df(raw_tables[3])
+parser.stop()
 
 
 
