@@ -112,5 +112,3 @@ parser.find_vacancies_description()
 parser.save_df(raw_tables[2])
 parser.stop()
 
-# parser.save_df()
-
