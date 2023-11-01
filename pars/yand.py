@@ -88,15 +88,19 @@ class YandJobParser(BaseJobParser):
         self.browser.implicitly_wait(3)
         # Поиск и запись вакансий на поисковой странице
         for prof in self.profs['fullName']:
-            input_str = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
-                                                            '/div[1]/div[2]/section/div/div/div/div[3]/div'
-                                                            '/div[2]/div/div/span/input')
-
-            input_str.send_keys(f"{prof}")
-            click_button = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
-                                                               '/div[1]/div[2]/section/div/div/div/div[3]/div'
-                                                               '/div[2]/div/button')
-            click_button.click()
+            text_str = self.url + '?text=' + str(prof.replace(' ', '+')).lower()
+            self.browser.get(text_str)
+            self.browser.maximize_window()
+            self.browser.delete_all_cookies()
+            # input_str = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
+            #                                                 '/div[1]/div[2]/section/div/div/div/div[3]/div'
+            #                                                 '/div[2]/div/div/span/input')
+            #
+            # input_str.send_keys(f"{prof}")
+            # click_button = self.browser.find_element(By.XPATH, '/html/body/div[3]/div/div/span/section/div[1]'
+            #                                                    '/div[1]/div[2]/section/div/div/div/div[3]/div'
+            #                                                    '/div[2]/div/button')
+            # click_button.click()
             time.sleep(3)
 
             # Прокрутка вниз до конца страницы
@@ -128,7 +132,7 @@ class YandJobParser(BaseJobParser):
 
 parser = YandJobParser(c.yand_base_link, profs)
 parser.find_vacancies()
-parser.find_vacancies_description()
+# parser.find_vacancies_description()
 parser.save_df(raw_tables[3])
 parser.stop()
 
